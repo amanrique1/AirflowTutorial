@@ -1,0 +1,7 @@
+apache-airflow-providers-postgres==5.5.1  # Ensure the latest compatible version
+pandas
+numpy
+scikit-learn
+apache-airflow-providers-amazon
+boto3
+pyarrow

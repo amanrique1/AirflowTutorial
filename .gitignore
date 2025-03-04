@@ -1,0 +1,30 @@
+# Ignore xcompiled Python files
+__pycache__/
+*.py[cod]
+
+# Ignore environment variables
+.env
+.env.*
+
+# Ignore Docker-related files
+.docker/
+.docker-compose.override.yml
+docker-compose.override.yml
+docker.sock
+volumes/
+
+# Ignore logs and temporary files
+logs/
+*.log
+*.tmp
+
+# Ignore IDE/editor files
+.vscode/
+
+# Ignore OS-specific files
+.DS_Store
+
+# Ignore Airflow-specific files
+airflow.cfg
+airflow.db
+webserver_config.py
