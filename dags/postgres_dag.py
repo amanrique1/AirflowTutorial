@@ -25,22 +25,17 @@ def greet_users(**kwargs):
 # Define the DAG
 with DAG(
     dag_id="postgres_example_dag",
+    template_searchpath=['/opt/airflow/dags', '/opt/airflow/sql'],
     start_date=days_ago(1),
     schedule_interval="@daily",
-    catchup=False
+    catchup=False,
 ) as dag:
 
     # Task to create a table if it doesn't exist
     create_table = PostgresOperator(
         task_id="create_table",
         postgres_conn_id="postgres_conn",
-        sql="""
-        CREATE TABLE IF NOT EXISTS airflow_test (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(50),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
+        sql="create_airflow_test_table.sql"
     )
 
     # Task to insert a new record with the user-provided name

@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS airflow_test (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
