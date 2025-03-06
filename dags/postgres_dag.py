@@ -5,16 +5,25 @@ from airflow.utils.dates import days_ago
 from airflow.models import TaskInstance
 from airflow.hooks.postgres_hook import PostgresHook
 
-# Function to fetch users from PostgreSQL and push to XCom
-def fetch_users_from_db(**kwargs):
+def fetch_users_with_hook(**kwargs):
     hook = PostgresHook(postgres_conn_id="postgres_conn")
-    records = hook.get_records("SELECT id, name FROM airflow_test;")  # Fetch results
-    kwargs["ti"].xcom_push(key="users", value=records)
+    records = hook.get_records("SELECT id, name FROM airflow_test;")
+    kwargs["ti"].xcom_push(key="hook_users", value=records)
+
+def validate_integrity(**kwargs):
+    ti: TaskInstance = kwargs['ti']
+    users_op = ti.xcom_pull(task_ids="fetch_users_op", key="return_value")
+    users_hook = ti.xcom_pull(task_ids="fetch_users_hook", key="hook_users")
+
+    if users_op != users_hook:
+        raise ValueError("Data mismatch between fetch_users_op and fetch_users_hook")
+    print("Data Integrity Verified")
+    return users_op
 
 # Function to retrieve users from XCom and greet them
 def greet_users(**kwargs):
     ti: TaskInstance = kwargs["ti"]
-    users = ti.xcom_pull(task_ids="fetch_users", key="users")  # Retrieve from XCom
+    users = ti.xcom_pull(task_ids="integrity_validator", key="return_value")  # Retrieve from XCom
 
     if users:
         for user in users:
@@ -48,10 +57,20 @@ with DAG(
         """
     )
 
-    # Fetch users from DB and store in XCom
-    fetch_users = PythonOperator(
-        task_id="fetch_users",
-        python_callable=fetch_users_from_db
+    fetch_users_op = PostgresOperator(
+        task_id="fetch_users_op",
+        postgres_conn_id="postgres_conn",
+        sql="SELECT id, name FROM airflow_test;",
+    )
+
+    fetch_users_hook = PythonOperator(
+        task_id="fetch_users_hook",
+        python_callable=fetch_users_with_hook
+    )
+
+    integrity_validator = PythonOperator(
+        task_id="integrity_validator",
+        python_callable=validate_integrity
     )
 
     # Task to process the selected data and greet each user
@@ -61,4 +80,4 @@ with DAG(
     )
 
     # Define task execution order
-    create_table >> insert_data >> fetch_users >> greet_task
+    create_table >> insert_data >> [fetch_users_op, fetch_users_hook] >> integrity_validator >> greet_task
